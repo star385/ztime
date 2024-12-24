@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head lang="zh_cn">
+<title>Z时钟</title>
+<meta charset="UTF-8">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script type="text/javascript">
+function buildTime(hour, minute, second) {
+	result = ""
+	if (hour < 10) {
+		result += "0";
+	}
+	result += hour
+	result += ":"
+	if (minute < 10) {
+		result += "0";
+	}
+	result += minute
+	result += ":"
+	if (second < 10) {
+		result += "0";
+	}
+	result += second
+	return result
+}
+
+// type=1 只更新标准时间
+// type=2 只更新Z时钟时间
+// type=3 全部更新
+function updateTime(type) {
+	const currentTime = new Date();
+	const hours = currentTime.getHours();
+	const minutes = currentTime.getMinutes();
+	const seconds = currentTime.getSeconds();
+	if (type != 2) {
+		$("#standardTimeSpan").text(buildTime(hours, minutes, seconds));
+	}
+	if (type == 1) {
+		return;
+	}
+	
+	const timeSeconds = hours * 3600 + minutes * 60 + seconds;
+	const zhutimeSeconds = Math.floor(timeSeconds * 1000 / 864);
+	const zhutimeHour = parseInt(zhutimeSeconds / 10000);
+	remain = zhutimeSeconds % 10000;
+	const zhutimeMinute = parseInt(remain / 100);
+	remain = remain % 100;
+	$("#zhuTimeSpan").text(buildTime(zhutimeHour, zhutimeMinute, remain))
+}
+
+class Time {
+  // type = 1: Z时钟时间
+  // type = 2：通用时间
+  constructor(hour, minute, second, type) {
+		this.hour = hour;
+		this.minute = minute
+		this.second = second
+		if (type == 1) {
+			this.hours_one_day = 10
+			this.minutes_one_hour = 100
+			this.seconds_one_minute = 100
+		}
+		if (type == 2) {
+			this.hours_one_day = 24
+			this.minutes_one_hour = 60
+			this.seconds_one_minute = 60
+		}
+  }
+  
+  addHours(hours) {
+	var newHour = this.hour + hours
+	this.hour = newHour % this.hours_one_day
+  }
+  
+  addMinutes(minutes) {
+	var newMinutes = this.minute + minutes
+	if (newMinutes >= this.minutes_one_hour) {
+		this.minute = newMinutes % this.minutes_one_hour
+		this.addHours(parseInt(newMinutes / this.minutes_one_hour))
+	} else {
+		this.minute = newMinutes
+	}
+  }
+  
+  addSeconds(seconds) {
+	var newSeconds = this.second + seconds
+	if (newSeconds >= this.seconds_one_minute) {
+		this.second = newSeconds % this.seconds_one_minute
+		this.addMinutes(parseInt(newSeconds / this.seconds_one_minute))
+	} else {
+		this.second = newSeconds
+	}
+  }
+  
+  toString() {
+	return buildTime(this.hour, this.minute, this.second)
+  }
+}
+
+var standard_time;
+
+var zhu_time;
+
+function InitialTime() {
+	const currentTime = new Date();
+	const hours = currentTime.getHours();
+	const minutes = currentTime.getMinutes();
+	const seconds = currentTime.getSeconds();
+	standard_time = new Time(hours, minutes, seconds, 2)
+	
+	const timeSeconds = hours * 3600 + minutes * 60 + seconds;
+	const zhutimeSeconds = Math.floor(timeSeconds * 1000 / 864);
+	const zhutimeHour = parseInt(zhutimeSeconds / 10000);
+	remain = zhutimeSeconds % 10000;
+	const zhutimeMinute = parseInt(remain / 100);
+	zhutimeSecond = remain % 100;
+	zhu_time = new Time(zhutimeHour, zhutimeMinute, zhutimeSecond, 1)
+}
+
+$(document).ready(function() {
+	InitialTime()
+	$("#standardTimeSpan").text(standard_time.toString())
+	$("#zhuTimeSpan").text(zhu_time.toString())
+	setInterval(() => {
+	    standard_time.addSeconds(1)
+		$("#standardTimeSpan").text(standard_time.toString())
+	}, 1000)
+	setInterval(() => {
+		zhu_time.addSeconds(1)
+	    $("#zhuTimeSpan").text(zhu_time.toString())
+	}, 864)
+});
+</script>
+<body>
+<h1>当前通用时间是：<span id="standardTimeSpan"></span></h1>
+<h1>当前Z时钟时间是：<span id="zhuTimeSpan"></span></h1>
+<br>
+</body>
+</html>
